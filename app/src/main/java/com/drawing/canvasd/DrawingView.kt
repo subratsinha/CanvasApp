@@ -44,6 +44,7 @@ class DrawingView(context: Context, attrs: AttributeSet) : View(context, attrs) 
         canvas = Canvas(mCanvasBitmap!!)
     }
 
+
     override fun onTouchEvent(event: MotionEvent): Boolean {
         val touchX = event.x
         val touchY = event.y
@@ -92,6 +93,10 @@ class DrawingView(context: Context, attrs: AttributeSet) : View(context, attrs) 
     fun setSizeForBrush(newSize:Float){
         mBrushSize=TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP,newSize,resources.displayMetrics)
         mDrawPaint!!.strokeWidth=mBrushSize
+    }
+    fun setColor(newColor: String){
+        color= Color.parseColor(newColor)
+        mDrawPaint!!.color=color
     }
 
     internal inner class CustomPath(var color: Int, var brushThickness: Float) : Path(){
