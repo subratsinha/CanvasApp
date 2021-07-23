@@ -27,6 +27,7 @@ class MainActivity : AppCompatActivity() {
         val brush_dialog=findViewById<ImageButton>(R.id.brush_dialog)
         val ll_paint_colors=findViewById<LinearLayout>(R.id.ll_paint_colors)
         val ib_gallery=findViewById<ImageView>(R.id.ib_gallery)
+        val ib_undo_btn=findViewById<ImageButton>(R.id.ib_undo_btn)
 
         mImageButtonCurrentPaint=ll_paint_colors[1] as ImageButton
 
@@ -46,6 +47,12 @@ class MainActivity : AppCompatActivity() {
                 requestStoragePermission()
             }
         }
+
+        ib_undo_btn.setOnClickListener{
+            drawing_view.onClickUndo()
+        }
+
+
 
     }
 
