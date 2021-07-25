@@ -5,18 +5,25 @@ import android.app.Activity
 import android.app.Dialog
 import android.content.Intent
 import android.content.pm.PackageManager
+import android.graphics.Bitmap
+import android.graphics.Canvas
+import android.graphics.Color
 import android.media.Image
+import android.media.MediaScannerConnection
+import android.os.AsyncTask
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
+import android.os.Environment
 import android.provider.MediaStore
 import android.view.View
-import android.widget.ImageButton
-import android.widget.ImageView
-import android.widget.LinearLayout
-import android.widget.Toast
+import android.widget.*
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
+import androidx.core.content.FileProvider
 import androidx.core.view.get
+import java.io.ByteArrayOutputStream
+import java.io.File
+import java.io.FileOutputStream
 
 class MainActivity : AppCompatActivity() {
     private var mImageButtonCurrentPaint:ImageButton?=null
@@ -28,6 +35,8 @@ class MainActivity : AppCompatActivity() {
         val ll_paint_colors=findViewById<LinearLayout>(R.id.ll_paint_colors)
         val ib_gallery=findViewById<ImageView>(R.id.ib_gallery)
         val ib_undo_btn=findViewById<ImageButton>(R.id.ib_undo_btn)
+        val ib_download=findViewById<ImageButton>(R.id.ib_download)
+        val fl_background_view=findViewById<FrameLayout>(R.id.fl_background_view)
 
         mImageButtonCurrentPaint=ll_paint_colors[1] as ImageButton
 
@@ -52,6 +61,14 @@ class MainActivity : AppCompatActivity() {
             drawing_view.onClickUndo()
         }
 
+        ib_download.setOnClickListener {
+            if(isReadStorageAllowed()){
+                BitmapAsyncTask(getBitmapFromView(fl_background_view)).execute()
+            }
+            else{
+                requestStoragePermission()
+            }
+        }
 
 
     }
@@ -142,6 +159,87 @@ class MainActivity : AppCompatActivity() {
             }
         }
     }
+
+    private fun getBitmapFromView(view: View): Bitmap {
+        val returnedBitmap= Bitmap.createBitmap(view.width,view.height,Bitmap.Config.ARGB_8888)
+
+        val canvas =Canvas(returnedBitmap)
+        val bgDrawable=view.background
+        if(bgDrawable!=null){
+            bgDrawable.draw(canvas)
+        }
+        else{
+            canvas.drawColor(Color.WHITE)
+        }
+        view.draw(canvas)
+        return returnedBitmap
+    }
+
+    private inner class BitmapAsyncTask(val mBitmap: Bitmap?):AsyncTask<Any , Void, String>(){
+
+        private lateinit var mProgressDialog: Dialog
+
+        override fun onPreExecute() {
+            super.onPreExecute()
+            showProgressDialog()
+        }
+
+        override fun doInBackground(vararg params: Any?): String {
+            var result = ""
+            if(mBitmap!=null){
+                try{
+                    val bytes=ByteArrayOutputStream()
+                    mBitmap.compress(Bitmap.CompressFormat.PNG,90,bytes)
+                    // make the dir ini which I want to save the file and then pass it as path
+                    val dir=Environment.getExternalStorageDirectory()
+                    val dirr=File(dir.toString()+ "/DCIM/CanvasD")
+                    dirr.mkdirs()
+                    val f=File(dirr.toString()+File.separator+"TJ_"+System.currentTimeMillis()/1000+".png")
+
+                    val fos=FileOutputStream(f)
+                    fos.write(bytes.toByteArray())
+                    fos.close()
+                    result=f.absolutePath
+
+                }catch (e:Exception){
+                    result=""
+                    e.printStackTrace()
+                }
+            }
+            return result
+        }
+
+        override fun onPostExecute(result: String?) {
+            super.onPostExecute(result)
+            cancelProgressDialog()
+            if (!result!!.isEmpty()){
+                Toast.makeText(this@MainActivity,"File saved successfully: $result",Toast.LENGTH_SHORT).show()
+            }
+            else{
+                Toast.makeText(this@MainActivity,"something went wrong",Toast.LENGTH_SHORT).show()
+            }
+
+            MediaScannerConnection.scanFile(this@MainActivity, arrayOf(result),null){
+                path , uri -> val shareIntent=Intent()
+                shareIntent.action=Intent.ACTION_SEND
+                shareIntent.type="image/png"
+                shareIntent.putExtra(Intent.EXTRA_STREAM,uri)
+                startActivity(Intent.createChooser(shareIntent,"Share"))
+
+            }
+        }
+
+        private fun showProgressDialog(){
+            mProgressDialog= Dialog(this@MainActivity)
+            mProgressDialog.setContentView(R.layout.dialog_custom_progress)
+            mProgressDialog.show()
+        }
+        private fun cancelProgressDialog(){
+            mProgressDialog.dismiss()
+        }
+
+    }
+
 
     companion object{
         private const val STORAGE_PERMISSION_CODE =1
