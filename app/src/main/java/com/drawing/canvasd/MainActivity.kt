@@ -240,7 +240,6 @@ class MainActivity : AppCompatActivity() {
 
     }
 
-
     companion object{
         private const val STORAGE_PERMISSION_CODE =1
         private const val GALLERY =2
